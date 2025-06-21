@@ -5,6 +5,8 @@ import { User } from '../collections';
 import auth from '../middleware/auth';
 import isAdmin from '../middleware/role';
 import { AuthRequest } from '../types';
+import { sendApprovalEmail, sendRejectionEmail } from '../services/emailService';
+import { Types } from 'mongoose';
 
 const router = express.Router();
 
@@ -198,6 +200,158 @@ router.delete('/:id', auth, isAdmin, async (req: Request, res: Response) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Server Error');
+  }
+});
+
+// Middleware per verificare se l'utente è admin
+const isAdminMiddleware = async (req: Request, res: Response, next: Function) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user && user.role === 'admin' && user.status === 'approved') {
+      next();
+    } else {
+      res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+  } catch (err) {
+    res.status(500).send('Server error');
+  }
+};
+
+// @route   GET api/users/pending
+// @desc    Get all pending users (admin only)
+// @access  Private (Admin)
+router.get('/pending', isAdminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const pendingUsers = await User.find({ status: 'pending' })
+      .select('-passwordHash')
+      .sort({ createdAt: -1 });
+    
+    res.json(pendingUsers);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   PUT api/users/approve/:id
+// @desc    Approve a user (admin only)
+// @access  Private (Admin)
+router.put('/approve/:id', [
+  isAdminMiddleware,
+  body('reason', 'Reason is optional').optional().isString(),
+], async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.status !== 'pending') {
+      return res.status(400).json({ message: 'User is not pending approval' });
+    }
+
+    // Aggiorna lo stato dell'utente
+    user.status = 'approved';
+    user.approvedBy = new Types.ObjectId(req.user.id);
+    user.approvedAt = new Date();
+    
+    await user.save();
+
+    // Invia email di approvazione
+    try {
+      await sendApprovalEmail(user.email, user.name);
+    } catch (emailError) {
+      console.error('Errore invio email approvazione:', emailError);
+    }
+
+    res.json({ 
+      message: 'User approved successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        status: user.status,
+        approvedAt: user.approvedAt
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   PUT api/users/reject/:id
+// @desc    Reject a user (admin only)
+// @access  Private (Admin)
+router.put('/reject/:id', [
+  isAdminMiddleware,
+  body('reason', 'Reason is optional').optional().isString(),
+], async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.status !== 'pending') {
+      return res.status(400).json({ message: 'User is not pending approval' });
+    }
+
+    // Aggiorna lo stato dell'utente
+    user.status = 'rejected';
+    user.approvedBy = new Types.ObjectId(req.user.id);
+    user.approvedAt = new Date();
+    
+    await user.save();
+
+    // Invia email di rifiuto
+    try {
+      await sendRejectionEmail(user.email, user.name, req.body.reason);
+    } catch (emailError) {
+      console.error('Errore invio email rifiuto:', emailError);
+    }
+
+    res.json({ 
+      message: 'User rejected successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        status: user.status,
+        approvedAt: user.approvedAt
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   GET api/users
+// @desc    Get all users (admin only)
+// @access  Private (Admin)
+router.get('/', isAdminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const users = await User.find()
+      .select('-passwordHash')
+      .sort({ createdAt: -1 });
+    
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
   }
 });
 

@@ -13,6 +13,10 @@ export interface User {
   email: string;
   role: string;
   passwordHash: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  approvedBy?: Types.ObjectId;
+  approvedAt?: Date;
+  createdAt?: Date;
 }
 
 export interface DecodedUser {
