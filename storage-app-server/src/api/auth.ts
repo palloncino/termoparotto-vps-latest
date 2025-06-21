@@ -38,25 +38,24 @@ router.post(
         email,
         role,
         passwordHash: await bcrypt.hash(password, 10),
+        is_active: false,
+        status: 'pending'
       });
 
       await user.save();
 
-      const payload = {
+      // Don't return a token for inactive users - they need admin approval first
+      res.json({ 
+        msg: 'User registered successfully. Please wait for admin approval before logging in.',
         user: {
-          id: user.id,
-        },
-      };
-
-      jwt.sign(
-        payload,
-        process.env.JWT_SECRET as string,
-        { expiresIn: '1h' },
-        (err, token) => {
-          if (err) throw err;
-          res.json({ token });
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          is_active: user.is_active,
+          status: user.status
         }
-      );
+      });
     } catch (err) {
       console.error(err);
       res.status(500).send('Server error');
@@ -92,6 +91,11 @@ router.post(
 
       if (!isMatch) {
         return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
+      }
+
+      // Check if user is active
+      if (!(user as any).is_active) {
+        return res.status(400).json({ errors: [{ msg: 'Account is not active. Please contact an administrator.' }] });
       }
 
       const payload = { user };

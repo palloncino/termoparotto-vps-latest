@@ -1,6 +1,7 @@
 {
   "filter_by_name_code_description": "Filter per Code oder Beschreibungen",
   "dont_have_account": "Konto erstellen",
+  "already_have_account": "Haben Sie bereits ein Konto? Anmelden",
   "date_required": "Datum ist erforderlich.",
   "technician_required": "Techniker ist erforderlich.",
   "lunch_location_required": "Mittagsort ist erforderlich.",

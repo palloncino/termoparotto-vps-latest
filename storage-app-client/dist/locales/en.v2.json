@@ -1,6 +1,7 @@
 {
   "filter_by_name_code_description": "Filter per code or descriptions",
   "dont_have_account": "Create account",
+  "already_have_account": "Already have an account? Sign in",
   "date_required": "Date is required.",
   "technician_required": "Technician is required.",
   "lunch_location_required": "Lunch location is required.",

@@ -42,21 +42,17 @@ router.post('/register', [
             email,
             role,
             passwordHash: yield bcryptjs_1.default.hash(password, 10),
-            is_active: false,
-            status: 'pending'
         });
         yield user.save();
-        // Don't return a token for inactive users - they need admin approval first
-        res.json({
-            msg: 'User registered successfully. Please wait for admin approval before logging in.',
+        const payload = {
             user: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                is_active: user.is_active,
-                status: user.status
-            }
+                id: user.id,
+            },
+        };
+        jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+            if (err)
+                throw err;
+            res.json({ token });
         });
     }
     catch (err) {
@@ -84,10 +80,6 @@ router.post('/login', [
         const isMatch = yield bcryptjs_1.default.compare(password, user.passwordHash);
         if (!isMatch) {
             return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
-        }
-        // Check if user is active
-        if (!user.is_active) {
-            return res.status(400).json({ errors: [{ msg: 'Account is not active. Please contact an administrator.' }] });
         }
         const payload = { user };
         jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' }, (err, token) => {

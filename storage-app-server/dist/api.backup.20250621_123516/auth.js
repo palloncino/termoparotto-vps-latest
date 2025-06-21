@@ -17,9 +17,10 @@ const express_1 = __importDefault(require("express"));
 const express_validator_1 = require("express-validator");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const collections_1 = require("../collections");
+const emailService_1 = require("../services/emailService");
 const router = express_1.default.Router();
 // @route   POST api/auth/register
-// @desc    Register user
+// @desc    Register user (requires admin approval)
 // @access  Public
 router.post('/register', [
     (0, express_validator_1.body)('name', 'Name is required').not().isEmpty(),
@@ -42,21 +43,22 @@ router.post('/register', [
             email,
             role,
             passwordHash: yield bcryptjs_1.default.hash(password, 10),
-            is_active: false,
-            status: 'pending'
+            status: 'pending', // Default status
         });
         yield user.save();
-        // Don't return a token for inactive users - they need admin approval first
-        res.json({
-            msg: 'User registered successfully. Please wait for admin approval before logging in.',
-            user: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                is_active: user.is_active,
-                status: user.status
+        // Invia notifica email all'admin
+        try {
+            const adminUser = yield collections_1.User.findOne({ role: 'admin', status: 'approved' });
+            if (adminUser && adminUser.email) {
+                yield (0, emailService_1.sendAdminNotification)(adminUser.email, { name, email });
             }
+        }
+        catch (emailError) {
+            console.error('Errore invio email notifica:', emailError);
+            // Non bloccare la registrazione se l'email fallisce
+        }
+        res.json({
+            message: 'Registration successful. Your account is pending admin approval. You will receive an email when approved.'
         });
     }
     catch (err) {
@@ -65,7 +67,7 @@ router.post('/register', [
     }
 }));
 // @route   POST api/auth/login
-// @desc    Authenticate user & get token
+// @desc    Authenticate user & get token (only approved users)
 // @access  Public
 router.post('/login', [
     (0, express_validator_1.body)('email', 'Please include a valid email').isEmail(),
@@ -81,19 +83,48 @@ router.post('/login', [
         if (!user) {
             return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
         }
+        // Verifica che l'utente sia approvato
+        if (user.status !== 'approved') {
+            return res.status(403).json({
+                errors: [{
+                        msg: user.status === 'pending'
+                            ? 'Account pending approval. Please wait for admin approval.'
+                            : 'Account has been rejected. Contact administrator.'
+                    }]
+            });
+        }
         const isMatch = yield bcryptjs_1.default.compare(password, user.passwordHash);
         if (!isMatch) {
             return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
-        }
-        // Check if user is active
-        if (!user.is_active) {
-            return res.status(400).json({ errors: [{ msg: 'Account is not active. Please contact an administrator.' }] });
         }
         const payload = { user };
         jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' }, (err, token) => {
             if (err)
                 throw err;
             res.json({ token, user });
+        });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
+}));
+// @route   GET api/auth/status
+// @desc    Check user registration status
+// @access  Public
+router.get('/status/:email', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const user = yield collections_1.User.findOne({ email: req.params.email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.json({
+            status: user.status,
+            message: user.status === 'pending'
+                ? 'Account pending approval'
+                : user.status === 'approved'
+                    ? 'Account approved'
+                    : 'Account rejected'
         });
     }
     catch (err) {

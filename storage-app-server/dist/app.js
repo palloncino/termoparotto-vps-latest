@@ -64,11 +64,11 @@ app.use('/api/users', users_1.default);
 app.use('/api/clients', clients_1.default);
 app.use('/api/reports', reports_1.default);
 app.use('/api/worksites', worksites_1.default); // Use the worksite routes
-// Serve static files from the client dist folder
-app.use(express_1.default.static(path_1.default.join(__dirname, '../../storage-app-client/dist')));
+// Serve static files from your frontend build folder, if applicable
+app.use(express_1.default.static(path_1.default.join(__dirname, '../client/public')));
 // Catch-all for any other route: serve index.html for your SPA
 app.get('*', (req, res) => {
-    res.sendFile(path_1.default.resolve(__dirname, '../../storage-app-client/dist', 'index.html'));
+    res.sendFile(path_1.default.resolve(__dirname, '../client/public', 'index.html'));
 });
 const PORT = process.env.PORT || 1669;
 function startServer() {

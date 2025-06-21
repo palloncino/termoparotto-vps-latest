@@ -90,10 +90,20 @@ router.get('/', auth, async (req: Request, res: Response) => {
       .skip(skip)
       .limit(limit);
 
+    // Ensure is_active is properly set based on status
+    const usersWithCorrectStatus = users.map(user => {
+      const userObj = user.toObject() as any;
+      // If is_active is not set, derive it from status
+      if (userObj.is_active === undefined || userObj.is_active === null) {
+        userObj.is_active = userObj.status === 'approved';
+      }
+      return userObj;
+    });
+
     const total = await User.countDocuments(filters);
 
     res.json({
-      users,
+      users: usersWithCorrectStatus,
       totalPages: Math.ceil(total / limit),
       currentPage: page
     });
@@ -140,7 +150,9 @@ router.put('/:id/toggle-status', auth, isAdmin, async (req: Request, res: Respon
       return res.status(400).json({ msg: 'Cannot deactivate your own account' });
     }
 
-    user.is_active = !user.is_active;
+    // Toggle both is_active and status
+    (user as any).is_active = !(user as any).is_active;
+    (user as any).status = (user as any).is_active ? 'approved' : 'pending';
     await user.save();
 
     res.json({ 
@@ -149,9 +161,10 @@ router.put('/:id/toggle-status', auth, isAdmin, async (req: Request, res: Respon
         name: user.name,
         email: user.email,
         role: user.role,
-        is_active: user.is_active
+        is_active: (user as any).is_active,
+        status: (user as any).status
       },
-      msg: `User ${user.is_active ? 'activated' : 'deactivated'} successfully`
+      msg: `User ${(user as any).is_active ? 'activated' : 'deactivated'} successfully`
     });
   } catch (err) {
     console.error(err);

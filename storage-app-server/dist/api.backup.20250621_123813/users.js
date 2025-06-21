@@ -98,18 +98,9 @@ router.get('/', auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, 
             .select('-passwordHash')
             .skip(skip)
             .limit(limit);
-        // Ensure is_active is properly set based on status
-        const usersWithCorrectStatus = users.map(user => {
-            const userObj = user.toObject();
-            // If is_active is not set, derive it from status
-            if (userObj.is_active === undefined || userObj.is_active === null) {
-                userObj.is_active = userObj.status === 'approved';
-            }
-            return userObj;
-        });
         const total = yield collections_1.User.countDocuments(filters);
         res.json({
-            users: usersWithCorrectStatus,
+            users,
             totalPages: Math.ceil(total / limit),
             currentPage: page
         });
@@ -137,41 +128,6 @@ router.get('/stats', auth_1.default, (req, res) => __awaiter(void 0, void 0, voi
     }
     catch (err) {
         console.error('Error fetching user stats:', err);
-        res.status(500).send('Server Error');
-    }
-}));
-// @route   PUT api/users/:id/toggle-status
-// @desc    Toggle user activation status
-// @access  Private (Admin only)
-router.put('/:id/toggle-status', auth_1.default, role_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    try {
-        const user = yield collections_1.User.findById(req.params.id);
-        if (!user) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
-        // Prevent admin from deactivating themselves
-        if (user._id.toString() === ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id)) {
-            return res.status(400).json({ msg: 'Cannot deactivate your own account' });
-        }
-        // Toggle both is_active and status
-        user.is_active = !user.is_active;
-        user.status = user.is_active ? 'approved' : 'pending';
-        yield user.save();
-        res.json({
-            user: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                is_active: user.is_active,
-                status: user.status
-            },
-            msg: `User ${user.is_active ? 'activated' : 'deactivated'} successfully`
-        });
-    }
-    catch (err) {
-        console.error(err);
         res.status(500).send('Server Error');
     }
 }));
@@ -237,6 +193,38 @@ router.delete('/:id', auth_1.default, role_1.default, (req, res) => __awaiter(vo
             return res.status(404).json({ msg: 'User not found' });
         }
         res.json({ msg: 'User removed' });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+}));
+// @route   PUT api/users/:id/toggle-status
+// @desc    Toggle user activation status
+// @access  Private (Admin only)
+router.put('/:id/toggle-status', auth_1.default, role_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const user = yield collections_1.User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        // Prevent admin from deactivating themselves
+        if (user._id.toString() === ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id)) {
+            return res.status(400).json({ msg: 'Cannot deactivate your own account' });
+        }
+        user.is_active = !user.is_active;
+        yield user.save();
+        res.json({
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                is_active: user.is_active
+            },
+            msg: `User ${user.is_active ? 'activated' : 'deactivated'} successfully`
+        });
     }
     catch (err) {
         console.error(err);

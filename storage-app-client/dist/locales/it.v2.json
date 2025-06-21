@@ -1,6 +1,7 @@
 {
   "filter_by_name_code_description": "Filtra per codici o descrizione",
   "dont_have_account": "Crea account",
+  "already_have_account": "Hai già un account? Accedi",
   "date_required": "La data è obbligatoria.",
   "technician_required": "Il tecnico è obbligatorio.",
   "lunch_location_required": "Il luogo del pranzo è obbligatorio.",

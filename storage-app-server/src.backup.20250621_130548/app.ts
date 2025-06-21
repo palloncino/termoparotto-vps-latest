@@ -56,12 +56,12 @@ app.use('/api/clients', clientRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/worksites', worksiteRoutes); // Use the worksite routes
 
-// Serve static files from your frontend build folder, if applicable
-app.use(express.static(path.join(__dirname, '../client/public')));
+// Serve static files from the client dist folder
+app.use(express.static(path.join(__dirname, '../../storage-app-client/dist')));
 
 // Catch-all for any other route: serve index.html for your SPA
 app.get('*', (req, res) => {
-  res.sendFile(path.resolve(__dirname, '../client/public', 'index.html'));
+  res.sendFile(path.resolve(__dirname, '../../storage-app-client/dist', 'index.html'));
 });
 
 const PORT = process.env.PORT || 1669;
