@@ -1,0 +1,1 @@
+import{a as e}from"./api-CLE4YwRs.js";const n=async(s,t)=>(await e.get("/users",{params:{page:s,...t}})).data,o=async s=>(await e.get(`/users/${s}`)).data,p=async(s,t)=>(await e.put(`/users/${s}`,t)).data,c=async()=>(await e.get("/users/profile")).data,u=async()=>(await e.get("/users/stats")).data;export{n as a,o as b,c,u as g,p as u};
