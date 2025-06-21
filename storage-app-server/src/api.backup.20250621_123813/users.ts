@@ -125,40 +125,6 @@ router.get('/stats', auth, async (req: Request, res: Response) => {
   }
 });
 
-// @route   PUT api/users/:id/toggle-status
-// @desc    Toggle user activation status
-// @access  Private (Admin only)
-router.put('/:id/toggle-status', auth, isAdmin, async (req: Request, res: Response) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ msg: 'User not found' });
-    }
-
-    // Prevent admin from deactivating themselves
-    if (user._id.toString() === req.user?.id) {
-      return res.status(400).json({ msg: 'Cannot deactivate your own account' });
-    }
-
-    user.is_active = !user.is_active;
-    await user.save();
-
-    res.json({ 
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        is_active: user.is_active
-      },
-      msg: `User ${user.is_active ? 'activated' : 'deactivated'} successfully`
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Server Error');
-  }
-});
-
 // @route   GET api/users/:id
 // @desc    Get user by ID
 // @access  Private (Admin only)
@@ -229,6 +195,40 @@ router.delete('/:id', auth, isAdmin, async (req: Request, res: Response) => {
       return res.status(404).json({ msg: 'User not found' });
     }
     res.json({ msg: 'User removed' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   PUT api/users/:id/toggle-status
+// @desc    Toggle user activation status
+// @access  Private (Admin only)
+router.put('/:id/toggle-status', auth, isAdmin, async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Prevent admin from deactivating themselves
+    if (user._id.toString() === req.user?.id) {
+      return res.status(400).json({ msg: 'Cannot deactivate your own account' });
+    }
+
+    user.is_active = !user.is_active;
+    await user.save();
+
+    res.json({ 
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        is_active: user.is_active
+      },
+      msg: `User ${user.is_active ? 'activated' : 'deactivated'} successfully`
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send('Server Error');
