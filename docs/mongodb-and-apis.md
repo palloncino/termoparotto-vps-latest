@@ -3,24 +3,29 @@
 ## User Management (MongoDB CLI)
 
 ```bash
-# Approve user
-mongosh storage-app --eval "db.users.updateOne({email: 'user@example.com'}, {\$set: {status: 'approved'}})"
-# Set user as pending
-mongosh storage-app --eval "db.users.updateOne({email: 'user@example.com'}, {\$set: {status: 'pending'}})"
+# Approve user (set both status and is_active)
+mongosh storage-app --eval "db.users.updateOne({email: 'powerhydratoni@gmail.com'}, {\$set: {status: 'approved', is_active: true}})"
+# Set user as pending (inactive)
+mongosh storage-app --eval "db.users.updateOne({email: 'user@example.com'}, {\$set: {status: 'pending', is_active: false}})"
 # Reject user
-mongosh storage-app --eval "db.users.updateOne({email: 'user@example.com'}, {\$set: {status: 'rejected'}})"
+mongosh storage-app --eval "db.users.updateOne({email: 'user@example.com'}, {\$set: {status: 'rejected', is_active: false}})"
 # Change user role
 mongosh storage-app --eval "db.users.updateOne({email: 'user@example.com'}, {\$set: {role: 'admin'}})"
 # Find user
 mongosh storage-app --eval "db.users.findOne({email: 'user@example.com'})"
-# List all users
-mongosh storage-app --eval "db.users.find({}, {email: 1, status: 1, name: 1, role: 1})"
+# List all users with status
+mongosh storage-app --eval "db.users.find({}, {email: 1, status: 1, is_active: 1, name: 1, role: 1})"
 # List pending users
-mongosh storage-app --eval "db.users.find({status: 'pending'}, {email: 1, name: 1})"
+mongosh storage-app --eval "db.users.find({status: 'pending'}, {email: 1, name: 1, is_active: 1})"
+# List inactive users
+mongosh storage-app --eval "db.users.find({is_active: false}, {email: 1, name: 1, status: 1})"
 # Delete user
 mongosh storage-app --eval "db.users.deleteOne({email: 'user@example.com'})"
 # Create user (manual hash needed)
-mongosh storage-app --eval "db.users.insertOne({name: 'Name', email: 'user@example.com', passwordHash: 'HASH', role: 'user', status: 'approved', createdAt: new Date()})"
+mongosh storage-app --eval "db.users.insertOne({name: 'Name', email: 'user@example.com', passwordHash: 'HASH', role: 'user', status: 'pending', is_active: false, createdAt: new Date()})"
+# Fix existing users (set is_active based on status)
+mongosh storage-app --eval "db.users.updateMany({status: 'approved'}, {\$set: {is_active: true}})"
+mongosh storage-app --eval "db.users.updateMany({status: 'pending'}, {\$set: {is_active: false}})"
 ```
 
 ## Product Management (API)

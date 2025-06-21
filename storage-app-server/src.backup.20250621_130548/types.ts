@@ -13,8 +13,9 @@ export interface User {
   email: string;
   role: string;
   passwordHash: string;
-  is_active?: boolean;
-  status?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  approvedBy?: Types.ObjectId;
+  approvedAt?: Date;
   createdAt?: Date;
 }
 

@@ -71,8 +71,9 @@ const userSchema = new Schema({
   email: { type: String, unique: true },
   role: { type: String, enum: ['admin', 'user'] },
   passwordHash: String,
-  is_active: { type: Boolean, default: false },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  approvedAt: Date,
   createdAt: { type: Date, default: Date.now }
 });
 
