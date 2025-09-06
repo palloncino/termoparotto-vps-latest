@@ -1,6 +1,6 @@
 # server
 storage-app-server/node_modules
-storage-app-server/.env
+storage-app-server/.env*
 storage-app-server/package-lock.json
 storage-app-server/yarn.lock
 

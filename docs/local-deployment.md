@@ -44,7 +44,7 @@ Create a `.env` file in the server directory with the following variables:
 # Database Configuration
 MONGODB_URI=mongodb://localhost:27017/termoparotto
 # or for MongoDB Atlas:
-# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/termoparotto
+# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database_name
 
 # JWT Configuration
 JWT_SECRET=your_jwt_secret_key_here
