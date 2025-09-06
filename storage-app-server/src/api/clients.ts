@@ -67,20 +67,21 @@ router.get('/', auth, async (req: Request, res: Response) => {
     const skip = (page - 1) * limit;
 
     const filters: any = {};
-    if (req.query.name) filters.name = new RegExp(req.query.name as string, 'i');
-    if (req.query.address) filters.address = new RegExp(req.query.address as string, 'i');
-    if (req.query.contact_info) filters.contact_info = new RegExp(req.query.contact_info as string, 'i');
+    if (req.query.name)
+      filters.name = new RegExp(req.query.name as string, 'i');
+    if (req.query.address)
+      filters.address = new RegExp(req.query.address as string, 'i');
+    if (req.query.contact_info)
+      filters.contact_info = new RegExp(req.query.contact_info as string, 'i');
 
-    const clients = await Client.find(filters)
-      .skip(skip)
-      .limit(limit);
+    const clients = await Client.find(filters).skip(skip).limit(limit);
 
     const total = await Client.countDocuments(filters);
 
     res.json({
       clients,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
     });
   } catch (err: unknown) {
     console.error(err);
@@ -114,7 +115,10 @@ router.put(
   [
     body('name', 'Name is required').optional().not().isEmpty(),
     body('address', 'Address is required').optional().not().isEmpty(),
-    body('contact_info', 'Contact information is required').optional().not().isEmpty(),
+    body('contact_info', 'Contact information is required')
+      .optional()
+      .not()
+      .isEmpty(),
   ],
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
@@ -123,7 +127,9 @@ router.put(
     }
 
     try {
-      const client = await Client.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const client = await Client.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+      });
       if (!client) {
         return res.status(404).json({ msg: 'Client not found' });
       }

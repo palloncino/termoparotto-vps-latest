@@ -24,11 +24,13 @@ router.get('/stats', auth_1.default, (req, res) => __awaiter(void 0, void 0, voi
     try {
         const totalWorksites = yield collections_1.Worksite.countDocuments();
         const activeWorksites = yield collections_1.Worksite.countDocuments({ is_active: true });
-        const inactiveWorksites = yield collections_1.Worksite.countDocuments({ is_active: false });
+        const inactiveWorksites = yield collections_1.Worksite.countDocuments({
+            is_active: false,
+        });
         res.json({
             totalWorksites,
             activeWorksites,
-            inactiveWorksites
+            inactiveWorksites,
         });
     }
     catch (err) {
@@ -111,7 +113,9 @@ router.post('/', auth_1.default, [
 // @access  Private
 router.put('/:id', auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const worksite = yield collections_1.Worksite.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const worksite = yield collections_1.Worksite.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+        });
         if (!worksite) {
             return res.status(404).json({ msg: 'Worksite not found' });
         }

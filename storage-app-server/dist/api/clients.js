@@ -77,14 +77,12 @@ router.get('/', auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, 
             filters.address = new RegExp(req.query.address, 'i');
         if (req.query.contact_info)
             filters.contact_info = new RegExp(req.query.contact_info, 'i');
-        const clients = yield collections_1.Client.find(filters)
-            .skip(skip)
-            .limit(limit);
+        const clients = yield collections_1.Client.find(filters).skip(skip).limit(limit);
         const total = yield collections_1.Client.countDocuments(filters);
         res.json({
             clients,
             totalPages: Math.ceil(total / limit),
-            currentPage: page
+            currentPage: page,
         });
     }
     catch (err) {
@@ -114,14 +112,19 @@ router.get('/:id', auth_1.default, (req, res) => __awaiter(void 0, void 0, void 
 router.put('/:id', auth_1.default, role_1.default, [
     (0, express_validator_1.body)('name', 'Name is required').optional().not().isEmpty(),
     (0, express_validator_1.body)('address', 'Address is required').optional().not().isEmpty(),
-    (0, express_validator_1.body)('contact_info', 'Contact information is required').optional().not().isEmpty(),
+    (0, express_validator_1.body)('contact_info', 'Contact information is required')
+        .optional()
+        .not()
+        .isEmpty(),
 ], (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
     try {
-        const client = yield collections_1.Client.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const client = yield collections_1.Client.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+        });
         if (!client) {
             return res.status(404).json({ msg: 'Client not found' });
         }

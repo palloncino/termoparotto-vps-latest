@@ -9,7 +9,7 @@ const ImportLogSchema = new mongoose_1.default.Schema({
     totalRecords: { type: Number, required: true },
     importedCount: { type: Number, required: true },
     errors: { type: Array, default: [] },
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
 });
 const ImportLog = mongoose_1.default.model('ImportLog', ImportLogSchema);
 exports.default = ImportLog;

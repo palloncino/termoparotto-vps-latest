@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.initDatabase = initDatabase;
 const faker_1 = require("@faker-js/faker");
 const collections_1 = require("../collections");
+const decimalUtils_1 = require("../utils/decimalUtils");
 function initDatabase() {
     return __awaiter(this, void 0, void 0, function* () {
         // Clear existing data
@@ -20,7 +21,7 @@ function initDatabase() {
             collections_1.Client.deleteMany({}),
             collections_1.Worksite.deleteMany({}),
             collections_1.Product.deleteMany({}),
-            collections_1.Report.deleteMany({})
+            collections_1.Report.deleteMany({}),
         ]);
         // Create fake data
         const users = yield createUsers(5);
@@ -39,7 +40,7 @@ function createUsers(count) {
                 name: faker_1.faker.person.fullName(),
                 email: faker_1.faker.internet.email(),
                 role: faker_1.faker.helpers.arrayElement(['admin', 'user']),
-                passwordHash: faker_1.faker.internet.password()
+                passwordHash: faker_1.faker.internet.password(),
             });
         }
         return collections_1.User.create(users);
@@ -52,7 +53,7 @@ function createClients(count) {
             clients.push({
                 name: faker_1.faker.company.name(),
                 address: faker_1.faker.location.streetAddress(),
-                contact_info: faker_1.faker.phone.number()
+                contact_info: faker_1.faker.phone.number(),
             });
         }
         return collections_1.Client.create(clients);
@@ -70,7 +71,7 @@ function createWorksites(count, clients) {
                 description: faker_1.faker.lorem.sentence(),
                 is_active: faker_1.faker.datatype.boolean(),
                 planned_hours: faker_1.faker.number.int({ min: 10, max: 100 }),
-                end_date: faker_1.faker.date.soon({ days: 30 }) // A future date within the next 30 days
+                end_date: faker_1.faker.date.soon({ days: 30 }), // A future date within the next 30 days
             });
         }
         return collections_1.Worksite.create(worksites);
@@ -80,26 +81,29 @@ function createProducts(count) {
     return __awaiter(this, void 0, void 0, function* () {
         const products = [];
         for (let i = 0; i < count; i++) {
-            const unit_price_list = faker_1.faker.number.float({ min: 10, max: 1000, precision: 0.01 });
-            const unit_price_first_discount = faker_1.faker.number.float({ min: 0, max: 0.5, precision: 0.01 });
-            const unit_price_net = unit_price_list * (1 - unit_price_first_discount);
-            const unit_price_markup = faker_1.faker.number.float({ min: 0.1, max: 0.5, precision: 0.01 });
-            const unit_price_taxable = unit_price_net * (1 + unit_price_markup);
-            const unit_price_sale = unit_price_taxable;
-            products.push({
-                item_code: faker_1.faker.string.alphanumeric(10),
-                supplier_item_code: faker_1.faker.string.alphanumeric(10),
-                item_description: faker_1.faker.commerce.productDescription(),
-                diameter: faker_1.faker.number.float({ min: 1, max: 100, precision: 0.1 }),
-                length_mm: faker_1.faker.number.int({ min: 100, max: 10000 }),
-                unit_price_list,
-                unit_price_first_discount,
-                unit_price_net,
-                unit_price_markup,
-                unit_price_taxable,
-                unit_price_sale,
-                type: faker_1.faker.helpers.arrayElement(['product', 'material'])
+            const prezzo_acquisto = faker_1.faker.number.float({
+                min: 10,
+                max: 1000,
+                precision: 0.01,
             });
+            const utile = faker_1.faker.number.float({ min: 1, max: 100, precision: 0.01 });
+            const imponibile = prezzo_acquisto + utile;
+            const iva_10 = imponibile * 0.1;
+            const iva_22 = imponibile * 0.22;
+            const product = {
+                data_documento: faker_1.faker.date.recent().toISOString().split('T')[0],
+                descrizione: faker_1.faker.commerce.productName(),
+                descrizione_interna: faker_1.faker.commerce.productDescription(),
+                fornitore: faker_1.faker.company.name(),
+                prezzo_acquisto,
+                utile,
+                imponibile,
+                iva_10,
+                iva_22,
+            };
+            // Round the decimal values
+            const roundedProduct = (0, decimalUtils_1.roundProductDecimals)(product);
+            products.push(roundedProduct);
         }
         return collections_1.Product.create(products);
     });
@@ -117,44 +121,48 @@ function createReports(count, users, clients, worksites, products) {
                 for (let k = 0; k < taskCount; k++) {
                     const assignedTechnicians = faker_1.faker.helpers.arrayElements(users, faker_1.faker.number.int({ min: 1, max: Math.min(3, users.length) }));
                     const materialsUsedCount = faker_1.faker.number.int({ min: 0, max: 5 });
-                    const usedMaterials = faker_1.faker.helpers.arrayElements(products, materialsUsedCount).map(product => ({
+                    const usedMaterials = faker_1.faker.helpers
+                        .arrayElements(products, materialsUsedCount)
+                        .map(product => ({
                         product_id: product._id,
-                        quantity: faker_1.faker.number.int({ min: 1, max: 10 })
+                        quantity: faker_1.faker.number.int({ min: 1, max: 10 }),
                     }));
                     tasks.push({
                         assigned_technician_ids: assignedTechnicians.map(u => u._id),
                         task_description: faker_1.faker.lorem.sentence(),
                         work_hours: faker_1.faker.number.float({ min: 0.5, max: 8, precision: 0.5 }),
                         intervention_type: {
-                            to_quote: faker_1.faker.datatype.boolean(),
-                            in_economy: faker_1.faker.datatype.boolean(),
-                            site_inspection: faker_1.faker.datatype.boolean()
+                            da_preventivo: faker_1.faker.datatype.boolean(),
+                            in_economia: faker_1.faker.datatype.boolean(),
+                            sopralluogo: faker_1.faker.datatype.boolean(),
                         },
-                        materials_used: usedMaterials
+                        materials_used: usedMaterials,
                     });
                 }
                 activities.push({
                     client_id: faker_1.faker.helpers.arrayElement(clients)._id,
                     worksite_id: faker_1.faker.helpers.arrayElement(worksites)._id,
-                    activity_description: faker_1.faker.lorem.sentence(),
                     completed: faker_1.faker.datatype.boolean(),
-                    travel_time_hours: faker_1.faker.number.float({ min: 0.5, max: 3, precision: 0.5 }),
+                    travel_time_hours: faker_1.faker.number.float({
+                        min: 0.5,
+                        max: 3,
+                        precision: 0.5,
+                    }),
                     valid_travel_time: faker_1.faker.helpers.arrayElement(['manual', 'rules']),
                     intervention_type: {
-                        to_quote: faker_1.faker.datatype.boolean(),
-                        in_economy: faker_1.faker.datatype.boolean(),
-                        site_inspection: faker_1.faker.datatype.boolean()
+                        da_preventivo: faker_1.faker.datatype.boolean(),
+                        in_economia: faker_1.faker.datatype.boolean(),
+                        sopralluogo: faker_1.faker.datatype.boolean(),
                     },
                     assigned_technician_id: faker_1.faker.helpers.arrayElement(users)._id,
-                    tasks
+                    tasks,
                 });
             }
             reports.push({
                 date: faker_1.faker.date.recent(),
                 technician_id: faker_1.faker.helpers.arrayElement(users)._id,
                 lunch_location: faker_1.faker.location.streetAddress(),
-                short_description: faker_1.faker.lorem.sentence(),
-                activities
+                activities,
             });
         }
         return collections_1.Report.create(reports);

@@ -1,0 +1,1 @@
+import{a as t}from"./api-CZ7u_KBj.js";const o=async s=>(await t.post("/worksites",s)).data,n=async(s,e)=>(await t.get("/worksites",{params:{client_id:s,is_active:e}})).data,c=async s=>(await t.get(`/worksites/${s}`)).data,i=async(s,e)=>(await t.put(`/worksites/${s}`,e)).data,p=async s=>(await t.delete(`/worksites/${s}`)).data;export{c as a,o as c,p as d,n as g,i as u};

@@ -32,14 +32,14 @@ worksiteSchema.statics.updateHours = function (worksiteId, hoursLogged) {
 };
 // Intervention Type Schema (reusable for activities and tasks)
 const interventionTypeSchema = new mongoose_1.Schema({
-    to_quote: { type: Boolean, default: false },
-    in_economy: { type: Boolean, default: false },
-    site_inspection: { type: Boolean, default: false },
+    da_preventivo: { type: Boolean, default: false },
+    in_economia: { type: Boolean, default: false },
+    sopralluogo: { type: Boolean, default: false },
 }, { _id: false });
 // Material Used Schema for tasks
 const materialUsedSchema = new mongoose_1.Schema({
     product_id: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Product' },
-    quantity: Number
+    quantity: Number,
 }, { _id: false });
 // Task Schema inside activities
 const taskSchema = new mongoose_1.Schema({
@@ -47,20 +47,32 @@ const taskSchema = new mongoose_1.Schema({
     task_description: String,
     work_hours: Number,
     intervention_type: interventionTypeSchema,
-    materials_used: [materialUsedSchema]
+    materials_used: [materialUsedSchema],
+    material_unloading: { type: Boolean, default: false },
+    material_unloading_hours: {
+        type: Number,
+        default: 0,
+        min: 0,
+        set: function (value) {
+            return Math.round((value + Number.EPSILON) * 100) / 100;
+        }
+    },
 }, { _id: false });
 // Activity Schema
 const activitySchema = new mongoose_1.Schema({
     client_id: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Client' },
     worksite_id: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Worksite' },
-    activity_description: String,
     completed: Boolean,
     travel_time_hours: Number,
     travel_time: Number,
-    valid_travel_time: { type: String, enum: ['manual', 'rules'], default: 'manual' },
+    valid_travel_time: {
+        type: String,
+        enum: ['manual', 'rules'],
+        default: 'manual',
+    },
     intervention_type: interventionTypeSchema,
     assigned_technician_id: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
-    tasks: [taskSchema]
+    tasks: [taskSchema],
 }, { _id: false });
 // Report Schema
 const reportSchema = new mongoose_1.Schema({
@@ -68,8 +80,29 @@ const reportSchema = new mongoose_1.Schema({
     technician_id: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
     status: { type: String, default: 'draft' },
     lunch_location: String,
-    short_description: String,
-    activities: [activitySchema]
+    activities: [activitySchema],
+    created: { type: Date, default: Date.now },
+    last_updated: { type: Date, default: Date.now },
+});
+// Pre-save middleware to validate material unloading data
+reportSchema.pre('save', function (next) {
+    if (this.activities && Array.isArray(this.activities)) {
+        this.activities.forEach(activity => {
+            if (activity.tasks && Array.isArray(activity.tasks)) {
+                activity.tasks.forEach(task => {
+                    // Ensure material_unloading_hours is 0 if material_unloading is false
+                    if (task.material_unloading === false) {
+                        task.material_unloading_hours = 0;
+                    }
+                    // Ensure material_unloading_hours is non-negative
+                    if (task.material_unloading_hours < 0) {
+                        task.material_unloading_hours = 0;
+                    }
+                });
+            }
+        });
+    }
+    next();
 });
 const userSchema = new mongoose_1.Schema({
     name: String,
@@ -77,39 +110,66 @@ const userSchema = new mongoose_1.Schema({
     role: { type: String, enum: ['admin', 'user'] },
     passwordHash: String,
     is_active: { type: Boolean, default: false },
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-    createdAt: { type: Date, default: Date.now }
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending',
+    },
+    hourly_cost: {
+        type: Number,
+        default: 0,
+        min: 0,
+        set: function (value) {
+            return Math.round((value + Number.EPSILON) * 100) / 100;
+        }
+    },
+    createdAt: { type: Date, default: Date.now },
 });
 const clientSchema = new mongoose_1.Schema({
     name: String,
     address: String,
-    contact_info: String
+    contact_info: String,
 });
 const productSchema = new mongoose_1.Schema({
-    codice_articolo: String,
-    codice_fornitore: String,
-    descrizione_articolo: String,
-    prezzo_listino: Number,
-    prezzo_acquisto: Number,
-    prezzo_concosti: Number,
-    prezzo_cliente: Number,
-    prezzo_iva10: Number,
-    prezzo_iva22: Number,
-    data_acquisto: String,
-    settore: String,
-    marca: String,
-    macrosettore: String,
-    famiglie: String,
-    listino: Number,
-    scontato: Number,
-    con_spese_generali: Number,
-    con_ricarico: Number,
-    iva_al_10: Number,
-    vendita_al_22: Number,
-    uso: String,
-    field_1: String,
-    field_2: String,
-    field_3: String
+    data_documento: String,
+    descrizione: String,
+    descrizione_interna: String,
+    fornitore: String,
+    unit_of_measure: {
+        type: String,
+        default: 'pz',
+        enum: ['pz', 'kg', 'm', 'l', 'm²', 'm³', 'cm', 'mm', 'km', 'g', 't', 'ml', 'cl', 'dl']
+    },
+    prezzo_acquisto: {
+        type: Number,
+        set: function (value) {
+            return Math.round((value + Number.EPSILON) * 100) / 100;
+        }
+    },
+    utile: {
+        type: Number,
+        set: function (value) {
+            return Math.round((value + Number.EPSILON) * 100) / 100;
+        }
+    },
+    imponibile: {
+        type: Number,
+        set: function (value) {
+            return Math.round((value + Number.EPSILON) * 100) / 100;
+        }
+    },
+    iva_10: {
+        type: Number,
+        set: function (value) {
+            return Math.round((value + Number.EPSILON) * 100) / 100;
+        }
+    },
+    iva_22: {
+        type: Number,
+        set: function (value) {
+            return Math.round((value + Number.EPSILON) * 100) / 100;
+        }
+    },
 });
 // Create and export models
 exports.User = (0, mongoose_1.model)('User', userSchema);

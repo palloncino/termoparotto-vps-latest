@@ -15,7 +15,10 @@ router.post(
   [
     body('name', 'Name is required').not().isEmpty(),
     body('email', 'Please include a valid email').isEmail(),
-    body('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 }),
+    body(
+      'password',
+      'Please enter a password with 6 or more characters'
+    ).isLength({ min: 6 }),
     body('role', 'Role must be either admin or user').isIn(['admin', 'user']),
   ],
   async (req: Request, res: Response) => {
@@ -30,7 +33,9 @@ router.post(
       let user = await User.findOne({ email });
 
       if (user) {
-        return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
+        return res
+          .status(400)
+          .json({ errors: [{ msg: 'User already exists' }] });
       }
 
       user = new User({
@@ -39,13 +44,13 @@ router.post(
         role,
         passwordHash: await bcrypt.hash(password, 10),
         is_active: false,
-        status: 'pending'
+        status: 'pending',
       });
 
       await user.save();
 
       // Don't return a token for inactive users - they need admin approval first
-      res.json({ 
+      res.json({
         msg: 'User registered successfully. Please wait for admin approval before logging in.',
         user: {
           _id: user._id,
@@ -53,8 +58,8 @@ router.post(
           email: user.email,
           role: user.role,
           is_active: user.is_active,
-          status: user.status
-        }
+          status: user.status,
+        },
       });
     } catch (err) {
       console.error(err);
@@ -84,18 +89,31 @@ router.post(
       let user: UserType | null = await User.findOne({ email });
 
       if (!user) {
-        return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
+        return res
+          .status(400)
+          .json({ errors: [{ msg: 'Invalid Credentials' }] });
       }
 
-      const isMatch = await bcrypt.compare(password, user.passwordHash as string);
+      const isMatch = await bcrypt.compare(
+        password,
+        user.passwordHash as string
+      );
 
       if (!isMatch) {
-        return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
+        return res
+          .status(400)
+          .json({ errors: [{ msg: 'Invalid Credentials' }] });
       }
 
       // Check if user is active
       if (!(user as any).is_active) {
-        return res.status(400).json({ errors: [{ msg: 'Account is not active. Please contact an administrator.' }] });
+        return res.status(400).json({
+          errors: [
+            {
+              msg: 'Account is not active. Please contact an administrator.',
+            },
+          ],
+        });
       }
 
       const payload = { user };

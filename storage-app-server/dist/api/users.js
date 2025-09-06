@@ -75,8 +75,57 @@ router.get('/technicians', auth_1.default, (req, res) => __awaiter(void 0, void 
             res.status(500).json({ error: 'Server Error', details: err.message });
         }
         else {
-            res.status(500).json({ error: 'Server Error', details: 'An unknown error occurred' });
+            res
+                .status(500)
+                .json({ error: 'Server Error', details: 'An unknown error occurred' });
         }
+    }
+}));
+// @route   POST api/users
+// @desc    Create a new user (Admin only)
+// @access  Private (Admin only)
+router.post('/', auth_1.default, role_1.default, [
+    (0, express_validator_1.body)('name', 'Name is required').not().isEmpty(),
+    (0, express_validator_1.body)('email', 'Please include a valid email').isEmail(),
+    (0, express_validator_1.body)('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 }),
+    (0, express_validator_1.body)('role', 'Role must be either admin or user').isIn(['admin', 'user']),
+], (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const errors = (0, express_validator_1.validationResult)(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    const { name, email, password, role } = req.body;
+    try {
+        let user = yield collections_1.User.findOne({ email });
+        if (user) {
+            return res
+                .status(400)
+                .json({ errors: [{ msg: 'User already exists' }] });
+        }
+        user = new collections_1.User({
+            name,
+            email,
+            role,
+            passwordHash: yield bcryptjs_1.default.hash(password, 10),
+            is_active: true, // Admin-created users are active by default
+            status: 'approved',
+        });
+        yield user.save();
+        res.json({
+            msg: 'User created successfully',
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                is_active: user.is_active,
+                status: user.status,
+            },
+        });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
     }
 }));
 // @route   GET api/users
@@ -111,7 +160,7 @@ router.get('/', auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, 
         res.json({
             users: usersWithCorrectStatus,
             totalPages: Math.ceil(total / limit),
-            currentPage: page
+            currentPage: page,
         });
     }
     catch (err) {
@@ -132,7 +181,7 @@ router.get('/stats', auth_1.default, (req, res) => __awaiter(void 0, void 0, voi
             adminCount: adminUsers,
             userCount: regularUsers,
             adminPercentage: Math.round((adminUsers / totalUsers) * 100),
-            userPercentage: Math.round((regularUsers / totalUsers) * 100)
+            userPercentage: Math.round((regularUsers / totalUsers) * 100),
         });
     }
     catch (err) {
@@ -152,7 +201,9 @@ router.put('/:id/toggle-status', auth_1.default, role_1.default, (req, res) => _
         }
         // Prevent admin from deactivating themselves
         if (user._id.toString() === ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id)) {
-            return res.status(400).json({ msg: 'Cannot deactivate your own account' });
+            return res
+                .status(400)
+                .json({ msg: 'Cannot deactivate your own account' });
         }
         // Toggle both is_active and status
         user.is_active = !user.is_active;
@@ -165,9 +216,9 @@ router.put('/:id/toggle-status', auth_1.default, role_1.default, (req, res) => _
                 email: user.email,
                 role: user.role,
                 is_active: user.is_active,
-                status: user.status
+                status: user.status,
             },
-            msg: `User ${user.is_active ? 'activated' : 'deactivated'} successfully`
+            msg: `User ${user.is_active ? 'activated' : 'deactivated'} successfully`,
         });
     }
     catch (err) {
@@ -197,7 +248,9 @@ router.get('/:id', auth_1.default, (req, res) => __awaiter(void 0, void 0, void 
 router.put('/:id', auth_1.default, role_1.default, [
     (0, express_validator_1.body)('name', 'Name is required').optional().not().isEmpty(),
     (0, express_validator_1.body)('email', 'Please include a valid email').optional().isEmail(),
-    (0, express_validator_1.body)('role', 'Role must be either admin or user').optional().isIn(['admin', 'user']),
+    (0, express_validator_1.body)('role', 'Role must be either admin or user')
+        .optional()
+        .isIn(['admin', 'user']),
 ], (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {

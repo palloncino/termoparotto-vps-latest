@@ -35,7 +35,9 @@ router.post('/register', [
     try {
         let user = yield collections_1.User.findOne({ email });
         if (user) {
-            return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
+            return res
+                .status(400)
+                .json({ errors: [{ msg: 'User already exists' }] });
         }
         user = new collections_1.User({
             name,
@@ -43,7 +45,7 @@ router.post('/register', [
             role,
             passwordHash: yield bcryptjs_1.default.hash(password, 10),
             is_active: false,
-            status: 'pending'
+            status: 'pending',
         });
         yield user.save();
         // Don't return a token for inactive users - they need admin approval first
@@ -55,8 +57,8 @@ router.post('/register', [
                 email: user.email,
                 role: user.role,
                 is_active: user.is_active,
-                status: user.status
-            }
+                status: user.status,
+            },
         });
     }
     catch (err) {
@@ -79,15 +81,25 @@ router.post('/login', [
     try {
         let user = yield collections_1.User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
+            return res
+                .status(400)
+                .json({ errors: [{ msg: 'Invalid Credentials' }] });
         }
         const isMatch = yield bcryptjs_1.default.compare(password, user.passwordHash);
         if (!isMatch) {
-            return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
+            return res
+                .status(400)
+                .json({ errors: [{ msg: 'Invalid Credentials' }] });
         }
         // Check if user is active
         if (!user.is_active) {
-            return res.status(400).json({ errors: [{ msg: 'Account is not active. Please contact an administrator.' }] });
+            return res.status(400).json({
+                errors: [
+                    {
+                        msg: 'Account is not active. Please contact an administrator.',
+                    },
+                ],
+            });
         }
         const payload = { user };
         jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' }, (err, token) => {
