@@ -3,12 +3,14 @@ storage-app-server/node_modules
 storage-app-server/.env*
 storage-app-server/package-lock.json
 storage-app-server/yarn.lock
+storage-app-server/dist
 
 # client
 storage-app-client/node_modules
 storage-app-client/.env
 storage-app-client/package-lock.json
 storage-app-client/yarn.lock
+storage-app-client/dist
 
 # others
 client-build.tar.gz
