@@ -1,0 +1,1 @@
+import{m as e,j as o}from"./index-DBn0QrPF.js";const i=({onClose:t,children:a})=>e.createPortal(o.jsx("div",{className:"fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50",onClick:t,children:o.jsx("div",{onClick:r=>r.stopPropagation(),children:a})}),document.body);export{i as B};

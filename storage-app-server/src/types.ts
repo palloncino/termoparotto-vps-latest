@@ -15,6 +15,7 @@ export interface User {
   passwordHash: string;
   is_active?: boolean;
   status?: string;
+  hourly_cost?: number;
   createdAt?: Date;
 }
 

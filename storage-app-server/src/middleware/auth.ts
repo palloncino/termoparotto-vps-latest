@@ -4,7 +4,7 @@ import { DecodedUser } from '../types';
 
 // Define a custom type for the JWT payload
 interface JwtPayload {
-  user: DecodedUser
+  user: DecodedUser;
 }
 
 const auth = (req: Request, res: Response, next: NextFunction) => {
@@ -14,7 +14,10 @@ const auth = (req: Request, res: Response, next: NextFunction) => {
   }
 
   try {
-    const decoded = jwt.verify(token, `${process.env.JWT_SECRET}`) as JwtPayload;
+    const decoded = jwt.verify(
+      token,
+      `${process.env.JWT_SECRET}`
+    ) as JwtPayload;
     decoded.user = { ...decoded.user, id: decoded.user._id };
     req.user = decoded.user;
     next();

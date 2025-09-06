@@ -1,6 +1,6 @@
 {
   "name": "server",
-  "version": "1.0.0",
+  "version": "5.0",
   "main": "app.ts",
   "scripts": {
     "start": "NODE_ENV=production ts-node -r dotenv/config src/app.ts dotenv_config_path=.env.remote",
@@ -8,7 +8,18 @@
     "build": "tsc",
     "lint": "eslint . --max-warnings 9999",
     "lint:strict": "eslint . --max-warnings 0",
-    "test": "jest"
+    "test": "jest",
+    "format": "prettier --write \"src/**/*.{js,ts,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,ts,json,md}\"",
+    "format:all": "prettier --write \"./**/*.{js,ts,json,md}\" --ignore-path .prettierignore",
+    "migrate": "node scripts/migrate-schema.js",
+    "test:schema": "node scripts/test-schema.js",
+    "check:db": "node scripts/check-mongodb.js",
+    "create:test-data": "node scripts/create-test-data.js",
+    "clean:test-data": "node scripts/clean-test-data.js",
+    "test:material-unloading": "node scripts/test-material-unloading.js",
+    "test:xlsx-export": "node scripts/test-xlsx-export.js",
+    "fix:material-unloading": "node scripts/fix-material-unloading.js"
   },
   "keywords": [],
   "author": {
@@ -19,16 +30,17 @@
   "dependencies": {
     "@faker-js/faker": "^8.4.1",
     "@types/bcrypt": "^5.0.2",
-    "@types/nodemailer": "^6.4.17",
+    "@types/exceljs": "^0.5.3",
+    "axios": "^1.11.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "express-validator": "^7.2.0",
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.0",
-    "nodemailer": "^7.0.3",
     "recharts": "^2.12.7"
   },
   "devDependencies": {
@@ -42,6 +54,7 @@
     "@typescript-eslint/parser": "^8.5.0",
     "eslint": "^9.10.0",
     "nodemon": "^3.1.4",
+    "prettier": "^3.3.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   },
